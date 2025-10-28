@@ -52,10 +52,12 @@ class ReportController extends Controller
                 'text' => $report->incident_description
             ]);
 
-            $result = $response->json()['is_human_traffic'];
-            $report->is_traffic = $result;
+
+
+            $report->is_traffic = $response->json()['is_human_traffic'];
+            $report->type = $response->json()['type'];
             $report->save();
-            return response()->json($result, 200);
+            return response()->json($report, 200);
         } catch (Exception $e) {
 
             return response()->json("Erro ao classificar Denuncia", 404);
@@ -81,5 +83,19 @@ class ReportController extends Controller
         } catch (\Exception) {
             return response()->json("Erro ao apagar Denuncia", 404);
         }
+    }
+
+    public function statistics() {
+        $total_reports = Report::all()->count();
+        $traffic_reports = Report::where('is_traffic', true)->count();
+        $traffic_per_weeks = Report::all()->sortDesc();
+        $traffic_per_type = Report::all()->groupBy("type");
+
+        return response()->json([
+            'total_reports' => $total_reports,
+            'traffic_reports' => $traffic_reports,
+            'traffic_per_weeks' => $traffic_per_weeks,
+            'traffic_per_type' => $traffic_per_type
+        ]);
     }
 }

@@ -9,4 +9,7 @@ use App\Http\Controllers\ReportController;
 //})->middleware('auth:sanctum');
 
 
+
+Route::get('reports/statistics', [ReportController::class, 'statistics']);
 Route::apiResource('reports', ReportController::class);
+
