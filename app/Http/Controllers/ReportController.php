@@ -6,13 +6,13 @@ use App\Http\Requests\ReportRequest;
 use App\Models\ImageReport;
 use App\Models\Report;
 use Exception;
+use Illuminate\Support\Facades\Http;
 
 class ReportController extends Controller
 {
     public function index() {
         $reports = Report::all();
-        $images = ImageReport::all();
-        return response()->json($images, 200);
+        return response()->json($reports, 200);
     }
 
     public function store(ReportRequest $request) {
@@ -29,19 +29,37 @@ class ReportController extends Controller
                 foreach ($images as $image) {
                     $reportImage = new ImageReport();
                     $imageName = md5($image->getClientOriginalName() . time()) . "." . $image->getClientOriginalExtension();
-                    $image->store(storage_path('app/public/reports/'), $imageName);
+                    $image->move(storage_path('app/public/reports/'), $imageName);
                     $reportImage->url = $imageName;
                     $reportImage->report_id = $report->id;
                     $reportImage->save();
 
                 }
             }
+            $this->predict($report);
             return response()->json($report, 200);
         } catch (\Exception $e) {
+
             return response()->json("Erro ao submeter Denuncia", 404);
         }
 
 
+    }
+
+    public function predict(Report $report) {
+        try {
+            $response = Http::post('http://172.24.20.156:8000/predict', [
+                'text' => $report->incident_description
+            ]);
+
+            $result = $response->json()['is_human_traffic'];
+            $report->is_traffic = $result;
+            $report->save();
+            return response()->json($result, 200);
+        } catch (Exception $e) {
+
+            return response()->json("Erro ao classificar Denuncia", 404);
+        }
     }
 
     public function show($id) {
